@@ -1,5 +1,7 @@
 Debug/
-lbuffer.*
+lbuffer.sdf
+lbuffer.sln
+lbuffer.v11.suo
 lbuffer/Debug/
 lbuffer/lbuffer.vcxproj.filters
 lbuffer/lbuffer.vcxproj
