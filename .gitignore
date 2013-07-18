@@ -1,0 +1,5 @@
+Debug/
+lbuffer.*
+lbuffer/Debug/
+lbuffer/lbuffer.vcxproj.filters
+lbuffer/lbuffer.vcxproj
