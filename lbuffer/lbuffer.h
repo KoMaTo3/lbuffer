@@ -26,6 +26,9 @@ public:
     return int( floorf( value ) - 0.5f );
   }
   float GetValue( float x );
+  inline int GetSize() const {
+    return this->size;
+  }
 
 private:
   LBuffer();
