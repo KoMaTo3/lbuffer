@@ -12,7 +12,8 @@ public:
   virtual ~LBuffer();
   void Clear( float value );
   void __Dump();
-  void Draw( const Vec2& lineBegin, const Vec2& lineEnd );
+  void DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd );
+  void DrawLine( const Vec2& point0, const Vec2& point1 );
   inline float GetSizeToFloatCoefficient() const {
     return this->sizeToFloat;
   }
@@ -20,7 +21,7 @@ public:
     return value * this->fSize * this->invSizeFloat;
   }
   inline float SizeToFloat( int value ) const {
-    return float( value ) * sizeToFloat * this->sizeFloat;
+    return float( value ) * this->sizeToFloat * this->sizeFloat;
   }
   int Round( float value ) {
     return int( floorf( value ) - 0.5f );
@@ -29,11 +30,14 @@ public:
   inline int GetSize() const {
     return this->size;
   }
+  float GetDegreeOfPoint( const Vec2& point );
 
 private:
   LBuffer();
   LBuffer( const LBuffer& );
   LBuffer& operator=( const LBuffer& );
+  void _TestLinesIntersect( const Vec2& a0, const Vec2& b0, const Vec2& a1, const Vec2& b1, Vec2 *result );
+  void _PushValue( int position, float value );
 
   const int size;
   const float sizeFloat;
@@ -41,6 +45,7 @@ private:
   const float sizeToFloat;
   const float fSize;
   float *buffer;
+  static const Vec2 vecAxis;
 };
 
 
