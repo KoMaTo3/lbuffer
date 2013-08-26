@@ -143,9 +143,9 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
   //middle
   for( int x = xBegin + 1; x < xEnd; ++x ) {
     float a = this->SizeToFloat( x );
-    if( a < 0.1f ) {
+    if( a < 0.01f ) {
       a = 0.0f;
-    } else if( Math::TWO_PI - a < 0.1f ) {
+    } else if( Math::TWO_PI - a < 0.01f ) {
       a = Math::TWO_PI;
     }
     this->_TestLinesIntersect(
@@ -164,6 +164,9 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
 
 
 float LBuffer::GetDegreeOfPoint( const Vec2& point ) {
+  if( point.x > 0.0f && Math::Fabs( point.y ) < 0.01f ) {
+    return ( point.y < 0.0f ? 0.0f : Math::TWO_PI );
+  }
   Vec2 tmp( -point );
   tmp.NormalizeFast();
   float v = this->vecAxis * tmp;
@@ -175,9 +178,9 @@ float LBuffer::GetDegreeOfPoint( const Vec2& point ) {
   if( deg > Math::TWO_PI ) {
     deg -= Math::TWO_PI;
   }
-  if( deg < 0.1f ) {
+  if( deg < 0.01f ) {
     deg = 0.0f;
-  } else if( deg > Math::TWO_PI - 0.1f ) {
+  } else if( deg > Math::TWO_PI - 0.01f ) {
     deg = Math::TWO_PI;
   }
   return deg;
@@ -193,8 +196,13 @@ float LBuffer::GetValue( float x ) {
 
 
 void LBuffer::_TestLinesIntersect( const Vec2& start1, const Vec2& end1, const Vec2& start2, const Vec2& end2, Vec2 *out_intersection ) {
-  out_intersection->Set(
-    ( ( end2.x - start2.x ) * ( start1.y - start2.y ) - ( end2.y - start2.y ) * ( start1.x - start2.x ) ) / ( ( end2.y - start2.y ) * ( end1.x - start1.x ) - ( end2.x - start2.x ) * ( end1.y - start1.y ) ),
-    ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / ( ( end2.y - start2.y ) * ( end1.x - start1.x ) - ( end2.x - start2.x ) * ( end1.y - start1.y ) )
-    );
+  float d = ( ( end2.y - start2.y ) * ( end1.x - start1.x ) - ( end2.x - start2.x ) * ( end1.y - start1.y ) );
+  if( Math::Fabs( d ) < 0.00001f ) {
+    out_intersection->y = 1.0f;
+  } else {
+    out_intersection->y = ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / d;
+      //( ( end2.x - start2.x ) * ( start1.y - start2.y ) - ( end2.y - start2.y ) * ( start1.x - start2.x ) ) * oneByD,
+      //( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) * oneByD
+      //);
+  }
 }//_TestLinesIntersect
