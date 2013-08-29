@@ -20,13 +20,22 @@ public:
   inline float FloatToSize( float value ) const {
     return value * this->fSize * this->invSizeFloat;
   }
-  inline float SizeToFloat( int value ) const {
-    return float( value ) * this->sizeToFloat * this->sizeFloat;
+  inline float SizeToFloat( int value, float epsilon = 0.0f ) const {
+    float result = float( value ) * this->sizeToFloat * this->sizeFloat;
+    if( epsilon > 0.0f ) {
+      if( result < epsilon ) {
+        result = 0.0f;
+      } else if( this->sizeFloat - result < epsilon ) {
+        result = this->sizeFloat;
+      }
+    }
+    return result;
   }
   int Round( float value ) {
     return int( floorf( value ) - 0.5f );
   }
   float GetValue( float x );
+  float GetValueByIndex( int index );
   inline int GetSize() const {
     return this->size;
   }
@@ -36,7 +45,7 @@ private:
   LBuffer();
   LBuffer( const LBuffer& );
   LBuffer& operator=( const LBuffer& );
-  void _TestLinesIntersect( const Vec2& a0, const Vec2& b0, const Vec2& a1, const Vec2& b1, Vec2 *result );
+  void _TestLinesIntersect( const Vec2& a0, const Vec2& b0, const Vec2& a1, const Vec2& b1, float *result );
   void _PushValue( int position, float value );
 
   const int size;

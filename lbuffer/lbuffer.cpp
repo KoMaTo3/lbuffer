@@ -136,30 +136,24 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
     return;
   }
 
-  float value;
-  Vec2 r;
+  float value, t;
   //begin
-  this->_PushValue( xBegin, linearPointBegin.LengthFast() );
+  this->_PushValue( xBegin, pointBegin.y );
   //middle
   for( int x = xBegin + 1; x < xEnd; ++x ) {
-    float a = this->SizeToFloat( x );
-    if( a < 0.01f ) {
-      a = 0.0f;
-    } else if( Math::TWO_PI - a < 0.01f ) {
-      a = Math::TWO_PI;
-    }
+    float a = this->SizeToFloat( x, 0.001f );
     this->_TestLinesIntersect(
       Vec2Null,
-      Vec2( Math::Cos16( a ) * 100.0f, Math::Sin16( a ) * 100.0f ),
+      Vec2( Math::Cos16( a ), Math::Sin16( a ) ),
       linearPointBegin,
       linearPointEnd,
-      &r
+      &t
     );
-    value = ( linearPointBegin * ( 1.0f - r.y ) + linearPointEnd * r.y ).LengthFast();
+    value = ( linearPointBegin * ( 1.0f - t ) + linearPointEnd * t ).LengthFast();
     this->_PushValue( x, value );
   }
   //end
-  this->_PushValue( xEnd, linearPointEnd.LengthFast() );
+  this->_PushValue( xEnd, pointEnd.y );
 }//DrawLine
 
 
@@ -195,14 +189,22 @@ float LBuffer::GetValue( float x ) {
 }//GetValue
 
 
-void LBuffer::_TestLinesIntersect( const Vec2& start1, const Vec2& end1, const Vec2& start2, const Vec2& end2, Vec2 *out_intersection ) {
+float LBuffer::GetValueByIndex( int index ) {
+  if( index < 0 || index >= this->size ) {
+    return this->buffer[ 0 ];
+  }
+  return this->buffer[ index ];
+}//GetValueByIndex
+
+
+void LBuffer::_TestLinesIntersect( const Vec2& start1, const Vec2& end1, const Vec2& start2, const Vec2& end2, float *out_intersection ) {
   float d = ( ( end2.y - start2.y ) * ( end1.x - start1.x ) - ( end2.x - start2.x ) * ( end1.y - start1.y ) );
   if( Math::Fabs( d ) < 0.00001f ) {
-    out_intersection->y = 1.0f;
+    *out_intersection = 0.0f;
   } else {
-    out_intersection->y = ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / d;
-      //( ( end2.x - start2.x ) * ( start1.y - start2.y ) - ( end2.y - start2.y ) * ( start1.x - start2.x ) ) * oneByD,
-      //( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) * oneByD
+    *out_intersection = ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / d;
+      //( ( end2.x - start2.x ) * ( start1.y - start2.y ) - ( end2.y - start2.y ) * ( start1.x - start2.x ) ) / d,
+      //( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / d
       //);
   }
 }//_TestLinesIntersect
