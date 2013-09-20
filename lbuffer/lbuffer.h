@@ -54,6 +54,7 @@ private:
   const float sizeToFloat;
   const float fSize;
   float *buffer;
+  float lightRadius;
   static const Vec2 vecAxis;
 };
 

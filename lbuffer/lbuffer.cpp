@@ -8,7 +8,7 @@ const Vec2 LBuffer::vecAxis( 1.0f, 0.0f );
 
 
 LBuffer::LBuffer( int setSize, float setFloatSize )
-  :size( setSize ), buffer( new float[ setSize ] ), sizeToFloat( 1.0f / float( setSize ) ), fSize( float( setSize ) ), sizeFloat( setFloatSize ), invSizeFloat( 1.0f / setFloatSize )
+  :size( setSize ), buffer( new float[ setSize ] ), sizeToFloat( 1.0f / float( setSize ) ), fSize( float( setSize ) ), sizeFloat( setFloatSize ), invSizeFloat( 1.0f / setFloatSize ), lightRadius( 1000.0f )
 {
 }
 
@@ -22,6 +22,7 @@ void LBuffer::Clear( float value ) {
   for( int q = this->size; q; ) {
     this->buffer[ --q ] = value;
   }
+  this->lightRadius = value;
 }//Clear
 
 
@@ -137,11 +138,14 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
   }
 
   float value, t;
+  Vec2 intersectPoint;
+  bool firstIntersectFinded = false;
   //begin
-  this->_PushValue( xBegin, pointBegin.y );
+  //this->_PushValue( xBegin, pointBegin.y );
   //middle
-  for( int x = xBegin + 1; x < xEnd; ++x ) {
+  for( int x = xBegin - 2; x <= xEnd + 2; ++x ) {
     float a = this->SizeToFloat( x, 0.001f );
+    /*
     this->_TestLinesIntersect(
       Vec2Null,
       Vec2( Math::Cos16( a ), Math::Sin16( a ) ),
@@ -149,11 +153,23 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
       linearPointEnd,
       &t
     );
-    value = ( linearPointBegin * ( 1.0f - t ) + linearPointEnd * t ).LengthFast();
-    this->_PushValue( x, value );
+    */
+    if( Vec2::TestIntersect(
+      Vec2Null,
+      Vec2( Math::Cos( a ) * this->lightRadius, -Math::Sin( a ) * this->lightRadius ),
+      linearPointBegin,
+      linearPointEnd,
+      &intersectPoint,
+      0.01f
+    ) ) {
+      value = intersectPoint.LengthFast();
+      //__log.PrintInfo( Filelevel_DEBUG, "calc[%d : %d : %d] begin[%3.5f; %3.5f] end[%3.5f; %3.5f] vec[%3.5f; %3.5f] result[%3.5f; %3.5f;] value[%3.5f]", x, xBegin, xEnd, linearPointBegin.x, linearPointBegin.y, linearPointEnd.x, linearPointEnd.y, Math::Cos16( a ) * 1000.0f, Math::Sin16( a ) * 1000.0f, intersectPoint.x, intersectPoint.y, value );
+      //value = ( linearPointBegin * ( 1.0f - t ) + linearPointEnd * t ).LengthFast();
+      //__log.PrintInfo( Filelevel_DEBUG, "calc[%d] begin[%3.5f; %3.5f] end[%3.5f; %3.5f] result[%3.5f; %3.5f;] t[%3.5f] value[%3.5f]", x, linearPointBegin.x, linearPointBegin.y, linearPointEnd.x, linearPointEnd.y, ( linearPointBegin * ( 1.0f - t ) + linearPointEnd * t ).x, ( linearPointBegin * ( 1.0f - t ) + linearPointEnd * t ).y, t, value );
+      this->_PushValue( x, value );
+    }
   }
-  //end
-  this->_PushValue( xEnd, pointEnd.y );
+  //this->_PushValue( xEnd, pointEnd.y );
 }//DrawLine
 
 
@@ -199,7 +215,8 @@ float LBuffer::GetValueByIndex( int index ) {
 
 void LBuffer::_TestLinesIntersect( const Vec2& start1, const Vec2& end1, const Vec2& start2, const Vec2& end2, float *out_intersection ) {
   float d = ( ( end2.y - start2.y ) * ( end1.x - start1.x ) - ( end2.x - start2.x ) * ( end1.y - start1.y ) );
-  if( Math::Fabs( d ) < 0.00001f ) {
+  __log.Print( "d[%3.5f] top[%3.5f]", d, ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) );
+  if( Math::Fabs( d ) < 3.0f ) {
     *out_intersection = 0.0f;
   } else {
     *out_intersection = ( ( end1.x - start1.x ) * ( start1.y - start2.y ) - ( end1.y - start1.y ) * ( start1.x - start2.x ) ) / d;
