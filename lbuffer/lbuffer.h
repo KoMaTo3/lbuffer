@@ -45,7 +45,6 @@ private:
   LBuffer();
   LBuffer( const LBuffer& );
   LBuffer& operator=( const LBuffer& );
-  void _TestLinesIntersect( const Vec2& a0, const Vec2& b0, const Vec2& a1, const Vec2& b1, float *result );
   void _PushValue( int position, float value );
 
   const int size;
