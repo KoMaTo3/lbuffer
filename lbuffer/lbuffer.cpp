@@ -1,6 +1,5 @@
 #include "lbuffer.h"
 #include "math.h"
-#include "file.h"
 #include "logs.h"
 
 
@@ -23,15 +22,16 @@ void LBuffer::Clear( float value ) {
     this->buffer[ --q ] = value;
   }
   this->lightRadius = value;
+  this->cache.Update();
 }//Clear
 
 
 void LBuffer::__Dump() {
-  __log.PrintInfo( Filelevel_DEBUG, "LBuffer[x%p] size[%d]:", this, this->size );
+  LOGD( "LBuffer[x%p] size[%d]:\n", this, this->size );
   for( int q = 0; q < this->size; ++q ) {
-    __log.PrintInfo( Filelevel_DEBUG, "[%d] %3.3f", q, this->buffer[ q ] );
+    LOGD( "[%d] %3.3f\n", q, this->buffer[ q ] );
   }
-  __log.PrintInfo( Filelevel_DEBUG, "LBuffer done" );
+  LOGD( "LBuffer done\n" );
 }//__Dump
 
 
@@ -84,14 +84,30 @@ void LBuffer::DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd ) {
 
 
 
-void LBuffer::_PushValue( int position, float value ) {
+void LBuffer::_PushValue( int position, float value, LBufferCacheEntity *cacheElement ) {
   if( value < 0.0f ) {
     value = 0.0f;
   }
   if( value < this->buffer[ position ] ) {
     this->buffer[ position ] = value;
   }
+  if( cacheElement ) {
+    LOGD( "LBuffer::_PushValue => value[%3.3f] index[%d] stored in cache, current cache size[%d] element[%p]\n", value, position, cacheElement->values.size(), cacheElement );
+    cacheElement->values.push_back( LBufferCacheEntity::Value( position, value ) );
+  }
 }//_PushValue
+
+
+
+void LBuffer::WriteFromCache( LBufferCacheEntity *cacheEntity ) {
+  cacheEntity->WriteToBuffer( this->buffer );
+}//WriteFromCache
+
+
+
+bool LBuffer::IsObjectCached( ILBufferProjectedObject *object, LBufferCacheEntity** outCache ) {
+  return this->cache.CheckCache( object, object->GetPosition(), object->GetSize(), outCache );
+}//IsObjectCached
 
 
 
@@ -101,7 +117,10 @@ void LBuffer::_PushValue( int position, float value ) {
   проецировании линии, заданной в декартовых координатах
 ===========
 */
-void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
+void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec2& point1 ) {
+  if( !cache ) {
+    return;
+  }
   Vec2
     lineBegin( Vec2( this->GetDegreeOfPoint( point0 ), point0.LengthFast() ) ),
     lineEnd( Vec2( this->GetDegreeOfPoint( point1 ), point1.LengthFast() ) );
@@ -123,6 +142,7 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
   int xBegin = this->Round( this->FloatToSize( pointBegin.x ) ),
         xEnd = this->Round( this->FloatToSize( pointEnd.x ) );
   if( xEnd < 0 || xBegin >= this->size ) {
+    LOGD( ">>> skip by %d\n", __LINE__ );
     return;
   }
   if( xBegin < 0 ) {
@@ -133,7 +153,8 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
   }
 
   if( xBegin == xEnd ) { //вырожденная линия
-    this->buffer[ xBegin ] = pointBegin.y;
+    //this->buffer[ xBegin ] = pointBegin.y;
+    this->_PushValue( xBegin, pointBegin.y, cache );
     return;
   }
 
@@ -142,6 +163,7 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
   bool firstIntersectFinded = false;
   for( int x = xBegin - 2; x <= xEnd + 2; ++x ) {
     float a = this->SizeToFloat( x, 0.001f );
+    LOGD( "+1\n" );
     if( Vec2::TestIntersect(
       Vec2Null,
       Vec2( Math::Cos( a ) * this->lightRadius, -Math::Sin( a ) * this->lightRadius ),
@@ -151,7 +173,7 @@ void LBuffer::DrawLine( const Vec2& point0, const Vec2& point1 ) {
       0.01f
     ) ) {
       value = intersectPoint.LengthFast();
-      this->_PushValue( x, value );
+      this->_PushValue( x, value, cache );
     }
   }
 }//DrawLine

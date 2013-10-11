@@ -3,6 +3,14 @@
 
 
 #include "klib.h"
+#include "lbuffercache.h"
+
+
+class ILBufferProjectedObject {
+public:
+  virtual const Vec2& GetPosition() const = NULL;
+  virtual const Vec2& GetSize() const = NULL;
+};
 
 
 class LBuffer
@@ -13,7 +21,8 @@ public:
   void Clear( float value );
   void __Dump();
   void DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd );
-  void DrawLine( const Vec2& point0, const Vec2& point1 );
+  bool IsObjectCached( ILBufferProjectedObject *object, LBufferCacheEntity** outCache );
+  void DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec2& point1 );
   inline float GetSizeToFloatCoefficient() const {
     return this->sizeToFloat;
   }
@@ -40,12 +49,13 @@ public:
     return this->size;
   }
   float GetDegreeOfPoint( const Vec2& point );
+  void WriteFromCache( LBufferCacheEntity *cacheEntity );
 
 private:
   LBuffer();
   LBuffer( const LBuffer& );
   LBuffer& operator=( const LBuffer& );
-  void _PushValue( int position, float value );
+  void _PushValue( int position, float value, LBufferCacheEntity *cacheElement = NULL );
 
   const int size;
   const float sizeFloat;
@@ -55,6 +65,7 @@ private:
   float *buffer;
   float lightRadius;
   static const Vec2 vecAxis;
+  LBufferCache cache;
 };
 
 

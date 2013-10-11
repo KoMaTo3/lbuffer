@@ -7,6 +7,18 @@
 #define LOGW(...) printf( __VA_ARGS__ )
 #define LOGE(...) printf( __VA_ARGS__ )
 #else
+#define LOGD(...)
+#define LOGW(...)
+#define LOGE(...)
+#endif
+
+#ifdef LOGS_DISABLE
+#undef LOGD
+#undef LOGW
+#undef LOGE
+#define LOGD(...)
+#define LOGW(...)
+#define LOGE(...)
 #endif
 
 #endif
