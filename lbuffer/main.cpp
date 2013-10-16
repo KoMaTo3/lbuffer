@@ -38,7 +38,6 @@ int main() {
     buffer->DrawLine( cache, Vec2( 0.0f, 11.0f ), Vec2( 10.0f, 0.1f ) );
     buffer->DrawLine( cache, Vec2( 5.0f, 0.123f ), Vec2( 5.0f, 0.321f ) );
   }
-  obj0.position.x += 0.1f;
   if( buffer->IsObjectCached( &obj0, &cache ) ) {
     printf( "write from cache\n" );
     buffer->WriteFromCache( cache );
@@ -47,6 +46,8 @@ int main() {
     cache->Reset( obj0.GetPosition(), obj0.GetSize() );
     buffer->DrawLine( cache, Vec2( 0.2f, 0.5f ), Vec2( 0.5f, 0.5f ) );
   }
+  //obj0.position.x += 0.1f;
+  buffer->ClearCache();
   if( buffer->IsObjectCached( &obj0, &cache ) ) {
     printf( "write from cache\n" );
     buffer->WriteFromCache( cache );

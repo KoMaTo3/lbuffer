@@ -92,7 +92,7 @@ void LBuffer::_PushValue( int position, float value, LBufferCacheEntity *cacheEl
     this->buffer[ position ] = value;
   }
   if( cacheElement ) {
-    LOGD( "LBuffer::_PushValue => value[%3.3f] index[%d] stored in cache, current cache size[%d] element[%p]\n", value, position, cacheElement->values.size(), cacheElement );
+    //LOGD( "LBuffer::_PushValue => value[%3.3f] index[%d] stored in cache, current cache size[%d] element[%p]\n", value, position, cacheElement->values.size(), cacheElement );
     cacheElement->values.push_back( LBufferCacheEntity::Value( position, value ) );
   }
 }//_PushValue
@@ -102,6 +102,12 @@ void LBuffer::_PushValue( int position, float value, LBufferCacheEntity *cacheEl
 void LBuffer::WriteFromCache( LBufferCacheEntity *cacheEntity ) {
   cacheEntity->WriteToBuffer( this->buffer );
 }//WriteFromCache
+
+
+
+void LBuffer::ClearCache() {
+  this->cache.ClearCache();
+}//ClearCache
 
 
 
@@ -161,9 +167,13 @@ void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec
   float value;
   Vec2 intersectPoint;
   bool firstIntersectFinded = false;
-  for( int x = xBegin - 2; x <= xEnd + 2; ++x ) {
+  xBegin = max( xBegin - 2, 0 );
+  xEnd = min( xEnd + 2, this->size - 1 );
+  for( int x = xBegin; x <= xEnd; ++x ) {
+    if( x < 0 || x >= this->size ) {
+      continue;
+    }
     float a = this->SizeToFloat( x, 0.001f );
-    LOGD( "+1\n" );
     if( Vec2::TestIntersect(
       Vec2Null,
       Vec2( Math::Cos( a ) * this->lightRadius, -Math::Sin( a ) * this->lightRadius ),

@@ -39,7 +39,9 @@ bool LBufferCacheEntity::operator==( const LBufferCacheEntity& item ) const {
 
 void LBufferCacheEntity::WriteToBuffer( float *buffer ) {
   for( auto &value: this->values ) {
-    buffer[ value.index ] = value.value;
+    if( buffer[ value.index ] > value.value ) {
+      buffer[ value.index ] = value.value;
+    }
   }
 }//WriteToBuffer
 
@@ -61,6 +63,14 @@ bool LBufferCache::CheckCache( void *object, const Vec2& position, const Vec2& s
     element->second->position == position &&
     element->second->size == size;
 }//CheckCache
+
+
+void LBufferCache::ClearCache() {
+  for( auto &element: this->cache ) {
+    delete element.second;
+  }
+  this->cache.clear();
+}//ClearCache
 
 
 LBufferCacheEntity* LBufferCache::AddElement( void *object, const Vec2& position, const Vec2& size ) {
