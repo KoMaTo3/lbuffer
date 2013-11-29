@@ -13,7 +13,7 @@ LBuffer::LBuffer( int setSize, float setFloatSize )
 
 
 LBuffer::~LBuffer() {
-  delete this->buffer;
+  delete [] this->buffer;
 }
 
 
@@ -24,15 +24,6 @@ void LBuffer::Clear( float value ) {
   this->lightRadius = value;
   this->cache.Update();
 }//Clear
-
-
-void LBuffer::__Dump() {
-  LOGD( "LBuffer[x%p] size[%d]:\n", this, this->size );
-  for( int q = 0; q < this->size; ++q ) {
-    LOGD( "[%d] %3.3f\n", q, this->buffer[ q ] );
-  }
-  LOGD( "LBuffer done\n" );
-}//__Dump
 
 
 /*
@@ -69,13 +60,12 @@ void LBuffer::DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd ) {
     return;
   }
 
-  float value, t;
   //begin
   this->_PushValue( xBegin, pointBegin.y );
   //middle
   for( int x = xBegin + 1; x < xEnd; ++x ) {
-    t = float( x - xBegin ) / float( xEnd - xBegin );
-    value = pointBegin.y * ( 1.0f - t ) + pointEnd.y * t;
+    float t = float( x - xBegin ) / float( xEnd - xBegin );
+    float value = pointBegin.y * ( 1.0f - t ) + pointEnd.y * t;
     this->_PushValue( x, value );
   }
   //end
@@ -85,6 +75,10 @@ void LBuffer::DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd ) {
 
 
 void LBuffer::_PushValue( int position, float value, LBufferCacheEntity *cacheElement ) {
+  while( position < 0 ) {
+    position += this->size;
+  }
+  position %= this->size;
   if( value < 0.0f ) {
     value = 0.0f;
   }
@@ -92,7 +86,6 @@ void LBuffer::_PushValue( int position, float value, LBufferCacheEntity *cacheEl
     this->buffer[ position ] = value;
   }
   if( cacheElement ) {
-    //LOGD( "LBuffer::_PushValue => value[%3.3f] index[%d] stored in cache, current cache size[%d] element[%p]\n", value, position, cacheElement->values.size(), cacheElement );
     cacheElement->values.push_back( LBufferCacheEntity::Value( position, value ) );
   }
 }//_PushValue
@@ -111,6 +104,12 @@ void LBuffer::ClearCache() {
 
 
 
+void LBuffer::ClearCache( ILBufferProjectedObject *object ) {
+  this->cache.ClearCache( object );
+}//ClearCache
+
+
+
 bool LBuffer::IsObjectCached( ILBufferProjectedObject *object, LBufferCacheEntity** outCache ) {
   return this->cache.CheckCache( object, object->GetPosition(), object->GetSize(), outCache );
 }//IsObjectCached
@@ -125,6 +124,7 @@ bool LBuffer::IsObjectCached( ILBufferProjectedObject *object, LBufferCacheEntit
 */
 void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec2& point1 ) {
   if( !cache ) {
+    //__log.PrintInfo( Filelevel_WARNING, "LBuffer::DrawLine => no cache" );
     return;
   }
   Vec2
@@ -134,57 +134,68 @@ void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec
 
   Vec2  pointBegin,
         pointEnd;
+  pointBegin = lineBegin;
+  pointEnd = lineEnd;
+  linearPointBegin = point0;
+  linearPointEnd = point1;
+  int swapCount = 0;
   if( lineBegin.x > lineEnd.x ) {
-    pointBegin = lineEnd;
-    pointEnd = lineBegin;
-    linearPointBegin = point1;
-    linearPointEnd = point0;
-  } else {
-    pointBegin = lineBegin;
-    pointEnd = lineEnd;
-    linearPointBegin = point0;
-    linearPointEnd = point1;
+    Math::Swap( lineBegin, lineEnd );
+    ++swapCount;
+    Math::Swap( pointBegin, pointEnd );
+    Math::Swap( linearPointBegin, linearPointEnd );
   }
-  int xBegin = this->Round( this->FloatToSize( pointBegin.x ) ),
-        xEnd = this->Round( this->FloatToSize( pointEnd.x ) );
-  if( xEnd < 0 || xBegin >= this->size ) {
-    LOGD( ">>> skip by %d\n", __LINE__ );
-    return;
+  if( lineEnd.x - lineBegin.x > Math::PI ) {
+    lineBegin.x += Math::TWO_PI;
+    pointBegin.x += Math::TWO_PI;
+    Math::Swap( lineBegin, lineEnd );
+    ++swapCount;
+    Math::Swap( pointBegin, pointEnd );
+    Math::Swap( linearPointBegin, linearPointEnd );
   }
-  if( xBegin < 0 ) {
-    xBegin = 0;
-  }
-  if( xEnd > this->size - 1 ) {
-    xEnd = this->size - 1;
+  if( lineBegin.x > lineEnd.x ) {
+    Math::Swap( lineBegin, lineEnd );
+    ++swapCount;
+    Math::Swap( pointBegin, pointEnd );
+    Math::Swap( linearPointBegin, linearPointEnd );
   }
 
+  int xBegin = this->Round( this->FloatToSize( pointBegin.x + Math::TWO_PI ) ),
+        xEnd = this->Round( this->FloatToSize( pointEnd.x + Math::TWO_PI ) );
+
   if( xBegin == xEnd ) { //вырожденная линия
-    //this->buffer[ xBegin ] = pointBegin.y;
     this->_PushValue( xBegin, pointBegin.y, cache );
     return;
   }
 
   float value;
   Vec2 intersectPoint;
-  bool firstIntersectFinded = false;
-  xBegin = max( xBegin - 2, 0 );
-  xEnd = min( xEnd + 2, this->size - 1 );
-  for( int x = xBegin; x <= xEnd; ++x ) {
-    if( x < 0 || x >= this->size ) {
-      continue;
-    }
-    float a = this->SizeToFloat( x, 0.001f );
+  xBegin += this->size - 2;
+  xEnd += this->size + 2;
+  int calculationStep = -1;
+  int x = xBegin;
+  while( calculationStep ) {
+    int xValue = x % this->size;
+    float a = this->SizeToFloat( xValue, 0.001f );
     if( Vec2::TestIntersect(
       Vec2Null,
-      Vec2( Math::Cos( a ) * this->lightRadius, -Math::Sin( a ) * this->lightRadius ),
+      Vec2( Math::Cos( a ) * this->lightRadius * 2.0f, -Math::Sin( a ) * this->lightRadius * 2.0f ),
       linearPointBegin,
       linearPointEnd,
       &intersectPoint,
       0.01f
     ) ) {
       value = intersectPoint.LengthFast();
-      this->_PushValue( x, value, cache );
+      this->_PushValue( xValue, value, cache );
+    } else {
+      if( calculationStep < 0 && x <= xBegin ) {
+        calculationStep = 1;
+        x = xBegin;
+      } else if( calculationStep > 0 && x >= xEnd ) {
+        break;
+      }
     }
+    x += calculationStep;
   }
 }//DrawLine
 

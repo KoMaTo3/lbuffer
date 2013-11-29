@@ -19,7 +19,6 @@ public:
   LBuffer( int setSize, float setFloatSize = 1.0f );
   virtual ~LBuffer();
   void Clear( float value );
-  void __Dump();
   void DrawPolarLine( const Vec2& lineBegin, const Vec2& lineEnd );
   bool IsObjectCached( ILBufferProjectedObject *object, LBufferCacheEntity** outCache );
   void DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec2& point1 );
@@ -51,6 +50,7 @@ public:
   float GetDegreeOfPoint( const Vec2& point );
   void WriteFromCache( LBufferCacheEntity *cacheEntity );
   void ClearCache();
+  void ClearCache( ILBufferProjectedObject *object );
 
 private:
   LBuffer();
