@@ -2,7 +2,7 @@
 #define __LBUFFER_H__
 
 
-#include "klib.h"
+#include "lib/klib.h"
 #include "lbuffercache.h"
 
 
@@ -51,6 +51,7 @@ public:
   void WriteFromCache( LBufferCacheEntity *cacheEntity );
   void ClearCache();
   void ClearCache( ILBufferProjectedObject *object );
+  void __Dump();
 
 private:
   LBuffer();

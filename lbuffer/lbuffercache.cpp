@@ -1,5 +1,5 @@
 #include "lbuffercache.h"
-#include "logs.h"
+#include "lib/logs.h"
 
 
 const int LBUFFER_CACHE_LIFE_PERIOD = 10;
@@ -116,7 +116,7 @@ void LBufferCache::ClearCache( void* object ) {
     ++iter;
   }
   if( !deleted ) {
-    __log.PrintInfo( Filelevel_WARNING, "LBufferCache::ClearCache => object[%p] not found", object );
+    LOGW( "LBufferCache::ClearCache => object[%p] not found", object );
   }
 }//ClearCache
 

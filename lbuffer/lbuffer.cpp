@@ -1,6 +1,6 @@
 #include "lbuffer.h"
 #include "math.h"
-#include "logs.h"
+#include "lib/logs.h"
 
 
 const Vec2 LBuffer::vecAxis( 1.0f, 0.0f );
@@ -174,6 +174,7 @@ void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec
   xEnd += this->size + 2;
   int calculationStep = -1;
   int x = xBegin;
+  LOGD("%d:%d\n", xBegin, xEnd);
   while( calculationStep ) {
     int xValue = x % this->size;
     float a = this->SizeToFloat( xValue, 0.001f );
@@ -187,6 +188,12 @@ void LBuffer::DrawLine( LBufferCacheEntity *cache, const Vec2& point0, const Vec
     ) ) {
       value = intersectPoint.LengthFast();
       this->_PushValue( xValue, value, cache );
+      if( calculationStep < 0 && x <= xBegin ) {
+        calculationStep = 1;
+        x = xBegin;
+      } else if( calculationStep > 0 && x >= xEnd ) {
+        break;
+      }
     } else {
       if( calculationStep < 0 && x <= xBegin ) {
         calculationStep = 1;
@@ -238,3 +245,9 @@ float LBuffer::GetValueByIndex( int index ) {
   }
   return this->buffer[ index ];
 }//GetValueByIndex
+
+void LBuffer::__Dump() {
+  for( int q = 0; q < this->size; ++q ) {
+    LOGD( "%d => %3.3f\n", q, this->buffer[ q ] );
+  }
+}
